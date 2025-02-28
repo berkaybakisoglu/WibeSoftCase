@@ -18,6 +18,7 @@ public class GridManager : BaseManager<GridManager>
     
     #region Properties
     public event Action<GridCell> OnCellSelected;
+    public float CellSize => _cellSize;
     #endregion
     
     #region Unity Methods
@@ -36,7 +37,13 @@ public class GridManager : BaseManager<GridManager>
         {
             for (int z = 0; z < _gridHeight; z++)
             {
-                Vector3 worldPosition = new Vector3(x * _cellSize, 0, z * _cellSize);
+                // Position at the center of the cell
+                Vector3 worldPosition = new Vector3(
+                    x * _cellSize + _cellSize/2, 
+                    0, 
+                    z * _cellSize + _cellSize/2
+                );
+                
                 GameObject cellObject = Instantiate(_gridCellPrefab, worldPosition, Quaternion.identity, _gridParent);
                 cellObject.name = $"GridCell_{x}_{z}";
                 
@@ -123,7 +130,12 @@ public class GridManager : BaseManager<GridManager>
     
     public Vector3 GridToWorldPosition(Vector2Int gridPosition)
     {
-        return new Vector3(gridPosition.x * _cellSize, 0, gridPosition.y * _cellSize);
+        // Convert grid position to world position (center of the cell)
+        return new Vector3(
+            gridPosition.x * _cellSize + _cellSize/2, 
+            0, 
+            gridPosition.y * _cellSize + _cellSize/2
+        );
     }
     
     public Vector2Int WorldToGridPosition(Vector3 worldPosition)
