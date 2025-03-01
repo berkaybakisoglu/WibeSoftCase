@@ -1,6 +1,7 @@
 using UnityEngine;
 using UnityEngine.UI;
 using System.Collections.Generic;
+using TMPro;
 
 public class BuildingUI : MonoBehaviour
 {
@@ -100,7 +101,7 @@ public class BuildingUI : MonoBehaviour
             BuildingData buildingData = availableBuildings[i];
             Button button = Instantiate(buildingButtonPrefab, buildingButtonsContainer);
             
-            Text buttonText = button.GetComponentInChildren<Text>();
+            TextMeshProUGUI buttonText = button.GetComponentInChildren<TextMeshProUGUI>();
             if (buttonText != null)
             {
                 buttonText.text = buildingData.displayName;

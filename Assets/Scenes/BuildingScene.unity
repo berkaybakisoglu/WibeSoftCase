@@ -1100,6 +1100,10 @@ PrefabInstance:
       propertyPath: mainCamera
       value: 
       objectReference: {fileID: 330585545}
+    - target: {fileID: 1716404874774315674, guid: b0742279013b3254abb437fcd64cda72, type: 3}
+      propertyPath: controlsPanelOffset.y
+      value: 8
+      objectReference: {fileID: 0}
     - target: {fileID: 2860420615567455897, guid: b0742279013b3254abb437fcd64cda72, type: 3}
       propertyPath: m_Camera
       value: 

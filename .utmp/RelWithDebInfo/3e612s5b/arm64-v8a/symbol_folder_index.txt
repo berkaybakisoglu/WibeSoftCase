@@ -1,0 +1,1 @@
+C:\Users\berka\OneDrive\Desktop\Dev\WibeSoft\Library\Bee\Android\Prj\IL2CPP\Gradle\unityLibrary\build\intermediates\cxx\RelWithDebInfo\3e612s5b\obj\arm64-v8a
