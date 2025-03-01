@@ -12,7 +12,7 @@ GameObject:
   - component: {fileID: 3564311286199764808}
   - component: {fileID: 8891372413877287128}
   m_Layer: 6
-  m_Name: GridCell
+  m_Name: MapCell
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
