@@ -13,9 +13,6 @@ public class Building : BaseBuilding
     [SerializeField] private Material _invalidPlacementMaterial;
     
     [Header("Grid Visualization")]
-    [SerializeField] private GameObject _gridCellVisualizerPrefab;
-    [SerializeField] private Material _validCellMaterial;
-    [SerializeField] private Material _invalidCellMaterial;
     [SerializeField] private float _cellVisualizerHeight = 0.05f;
     
     [Header("Scale Settings")]
@@ -39,13 +36,6 @@ public class Building : BaseBuilding
         {
             _modelTransform = transform;
         }
-        
-        if (_gridCellVisualizerPrefab == null)
-        {
-            CreateDefaultCellVisualizerPrefab();
-        }
-        
-        EnsureBuildingHasCollider();
     }
     
     private void OnDestroy()
@@ -53,49 +43,12 @@ public class Building : BaseBuilding
         ClearCellVisualizers();
     }
     
-    private void OnDrawGizmos()
-    {
-        if (!Application.isPlaying)
-            return;
-            
-        Vector2Int actualSize = Size;
-        float cellSize = GridManager.Instance != null ? GridManager.Instance.CellSize : 1f;
-        
-        Gizmos.color = Color.yellow;
-        for (int x = 0; x < actualSize.x; x++)
-        {
-            for (int z = 0; z < actualSize.y; z++)
-            {
-                Vector2Int cellPos = _gridPosition + new Vector2Int(x, z);
-                Vector3 worldPos = GridManager.Instance != null ? 
-                    GridManager.Instance.GridToWorldPosition(cellPos) : 
-                    new Vector3((cellPos.x + 0.5f) * cellSize, 0, (cellPos.y + 0.5f) * cellSize);
-                
-                Gizmos.DrawWireCube(
-                    new Vector3(worldPos.x, 0.1f, worldPos.z), 
-                    new Vector3(cellSize, 0.1f, cellSize)
-                );
-            }
-        }
-        
-        if (_modelTransform != null)
-        {
-            Gizmos.color = Color.blue;
-            Bounds bounds = CalculateModelBounds();
-            Gizmos.DrawWireCube(bounds.center, bounds.size);
-        }
-    }
     #endregion
     
     #region Public Methods
     public override void Initialize(BuildingData data, Vector2Int position)
     {
         base.Initialize(data, position);
-        
-        if (_gridCellVisualizerPrefab != null && _cellVisualizers.Count == 0)
-        {
-            CreateCellVisualizers();
-        }
         
         if (_autoScaleToFitGrid)
         {
@@ -125,7 +78,7 @@ public class Building : BaseBuilding
         base.SetPlacementState(isValid);
         UpdateMaterials(isValid ? _validPlacementMaterial : _invalidPlacementMaterial);
         
-        ShowCellVisualizers(isValid);
+        ShowCellVisualizers();
     }
     
     public override void ConfirmPlacement()
@@ -180,113 +133,6 @@ public class Building : BaseBuilding
     #endregion
     
     #region Private Methods
-    private void CreateDefaultCellVisualizerPrefab()
-    {
-        GameObject visualizerPrefab = new GameObject("DefaultCellVisualizer");
-        visualizerPrefab.transform.SetParent(transform);
-        visualizerPrefab.transform.localPosition = Vector3.zero;
-        
-        MeshFilter meshFilter = visualizerPrefab.AddComponent<MeshFilter>();
-        meshFilter.mesh = CreateQuadMesh();
-        
-        MeshRenderer meshRenderer = visualizerPrefab.AddComponent<MeshRenderer>();
-        
-        if (_validCellMaterial == null)
-        {
-            _validCellMaterial = new Material(Shader.Find("Standard"));
-            _validCellMaterial.color = new Color(0, 1, 0, 0.5f);
-        }
-        
-        if (_invalidCellMaterial == null)
-        {
-            _invalidCellMaterial = new Material(Shader.Find("Standard"));
-            _invalidCellMaterial.color = new Color(1, 0, 0, 0.5f);
-        }
-        
-        _validCellMaterial.SetFloat("_Mode", 3);
-        _validCellMaterial.SetInt("_SrcBlend", (int)UnityEngine.Rendering.BlendMode.SrcAlpha);
-        _validCellMaterial.SetInt("_DstBlend", (int)UnityEngine.Rendering.BlendMode.OneMinusSrcAlpha);
-        _validCellMaterial.SetInt("_ZWrite", 0);
-        _validCellMaterial.DisableKeyword("_ALPHATEST_ON");
-        _validCellMaterial.EnableKeyword("_ALPHABLEND_ON");
-        _validCellMaterial.DisableKeyword("_ALPHAPREMULTIPLY_ON");
-        _validCellMaterial.renderQueue = 3000;
-        
-        _invalidCellMaterial.SetFloat("_Mode", 3);
-        _invalidCellMaterial.SetInt("_SrcBlend", (int)UnityEngine.Rendering.BlendMode.SrcAlpha);
-        _invalidCellMaterial.SetInt("_DstBlend", (int)UnityEngine.Rendering.BlendMode.OneMinusSrcAlpha);
-        _invalidCellMaterial.SetInt("_ZWrite", 0);
-        _invalidCellMaterial.DisableKeyword("_ALPHATEST_ON");
-        _invalidCellMaterial.EnableKeyword("_ALPHABLEND_ON");
-        _invalidCellMaterial.DisableKeyword("_ALPHAPREMULTIPLY_ON");
-        _invalidCellMaterial.renderQueue = 3000;
-        
-        meshRenderer.material = _validCellMaterial;
-        
-        visualizerPrefab.SetActive(false);
-        
-        _gridCellVisualizerPrefab = visualizerPrefab;
-    }
-    
-    private Mesh CreateQuadMesh()
-    {
-        Mesh mesh = new Mesh();
-        
-        Vector3[] vertices = new Vector3[4]
-        {
-            new Vector3(-0.5f, 0, -0.5f),
-            new Vector3(0.5f, 0, -0.5f),
-            new Vector3(-0.5f, 0, 0.5f),
-            new Vector3(0.5f, 0, 0.5f)
-        };
-        
-        int[] triangles = new int[6]
-        {
-            0, 2, 1,
-            2, 3, 1
-        };
-        
-        Vector2[] uv = new Vector2[4]
-        {
-            new Vector2(0, 0),
-            new Vector2(1, 0),
-            new Vector2(0, 1),
-            new Vector2(1, 1)
-        };
-        
-        Vector3[] normals = new Vector3[4]
-        {
-            Vector3.up,
-            Vector3.up,
-            Vector3.up,
-            Vector3.up
-        };
-        
-        mesh.vertices = vertices;
-        mesh.triangles = triangles;
-        mesh.uv = uv;
-        mesh.normals = normals;
-        
-        return mesh;
-    }
-    
-    private void LogDebugInfo(string prefix)
-    {
-        if (_data == null || _modelTransform == null)
-            return;
-            
-        Vector2Int actualSize = Size;
-        Bounds bounds = CalculateModelBounds();
-        
-        #if UNITY_EDITOR || DEVELOPMENT_BUILD
-        Debug.Log($"{prefix}: Rotation={_rotationIndex * 90}°, " +
-                  $"Size={actualSize.x}x{actualSize.y}, " +
-                  $"ModelScale={_modelTransform.localScale}, " +
-                  $"ModelWorldPos={_modelTransform.position}, " +
-                  $"BuildingPos={transform.position}");
-        #endif
-    }
-    
     private void UpdateMaterials(Material material)
     {
         if (material == null)
@@ -306,92 +152,50 @@ public class Building : BaseBuilding
         }
     }
     
-    private void CreateCellVisualizers()
+    private void ShowCellVisualizers()
     {
         ClearCellVisualizers();
-        
-        int maxSize = Mathf.Max(_data.size.x, _data.size.y);
-        int totalCells = maxSize * maxSize;
-        float cellSize = GridManager.Instance.CellSize;
-        
-        for (int i = 0; i < totalCells; i++)
-        {
-            GameObject visualizer = Instantiate(_gridCellVisualizerPrefab, transform);
-            visualizer.transform.localScale = new Vector3(cellSize, _cellVisualizerHeight * 2, cellSize);
-            visualizer.SetActive(false);
-            _cellVisualizers.Add(visualizer);
-        }
-    }
-    
-    private void ShowCellVisualizers(bool isValidPlacement)
-    {
-        if (_cellVisualizers.Count == 0 || _gridCellVisualizerPrefab == null)
+        if (GridCellVisualizerPool.Instance == null)
             return;
-            
+        
         _showingCellVisualizers = true;
-        
-        UpdateCellVisualizerPositions();
-        
-        CheckCellValidity();
+        _cellVisualizers = GridCellVisualizerPool.Instance.CreateVisualizersForBuilding(
+            _gridPosition, 
+            Size, 
+            GridManager.Instance.CellSize, 
+            _cellVisualizerHeight,
+            gameObject
+        );
     }
     
     private void UpdateCellVisualizerPositions()
     {
-        Vector2Int actualSize = Size;
-        float cellSize = GridManager.Instance.CellSize;
-        
-        for (int i = 0; i < _cellVisualizers.Count; i++)
-        {
-            if (i < actualSize.x * actualSize.y)
-            {
-                int x = i % actualSize.x;
-                int z = i / actualSize.x;
-                
-                Vector3 worldPos;
-                
-                Vector2Int cellPos = _gridPosition + new Vector2Int(x, z);
-                
-                worldPos = GridManager.Instance.GridToWorldPosition(cellPos);
-                worldPos.y += _cellVisualizerHeight;
-                
-                GameObject visualizer = _cellVisualizers[i];
-                visualizer.transform.position = worldPos;
-                
-                visualizer.transform.localScale = new Vector3(cellSize, _cellVisualizerHeight * 2, cellSize);
-                
-                visualizer.SetActive(true);
-            }
-            else
-            {
-                _cellVisualizers[i].SetActive(false);
-            }
-        }
+        ClearCellVisualizers();
+        _cellVisualizers = GridCellVisualizerPool.Instance.CreateVisualizersForBuilding(
+            _gridPosition, 
+            Size, 
+            GridManager.Instance.CellSize, 
+            _cellVisualizerHeight,
+            gameObject
+        );
     }
     
-    private void CheckCellValidity()
+    private void HideCellVisualizers()
     {
-        Vector2Int actualSize = Size;
-        
-        for (int x = 0; x < actualSize.x; x++)
+        _showingCellVisualizers = false;
+        ClearCellVisualizers();
+    }
+    
+    private void ClearCellVisualizers()
+    {
+        foreach (var visualizer in _cellVisualizers)
         {
-            for (int z = 0; z < actualSize.y; z++)
+            if (visualizer != null)
             {
-                int index = z * actualSize.x + x;
-                if (index < _cellVisualizers.Count)
-                {
-                    Vector2Int cellPos = _gridPosition + new Vector2Int(x, z);
-                    bool isCellValid = IsCellValid(cellPos);
-                    
-                    GameObject visualizer = _cellVisualizers[index];
-                    MeshRenderer renderer = visualizer.GetComponent<MeshRenderer>();
-                    
-                    if (renderer != null)
-                    {
-                        renderer.material = isCellValid ? _validCellMaterial : _invalidCellMaterial;
-                    }
-                }
+                    GridCellVisualizerPool.Instance.ReturnVisualizer(visualizer);
             }
         }
+        _cellVisualizers.Clear();
     }
     
     private bool IsCellValid(Vector2Int cellPos)
@@ -410,32 +214,6 @@ public class Building : BaseBuilding
         }
         
         return true;
-    }
-    
-    private void HideCellVisualizers()
-    {
-        _showingCellVisualizers = false;
-        
-        foreach (var visualizer in _cellVisualizers)
-        {
-            if (visualizer != null)
-            {
-                visualizer.SetActive(false);
-            }
-        }
-    }
-    
-    private void ClearCellVisualizers()
-    {
-        foreach (var visualizer in _cellVisualizers)
-        {
-            if (visualizer != null)
-            {
-                Destroy(visualizer);
-            }
-        }
-        
-        _cellVisualizers.Clear();
     }
     
     private void ScaleModelToFitGrid()
@@ -571,41 +349,5 @@ public class Building : BaseBuilding
         return centerPos;
     }
     
-    private void EnsureBuildingHasCollider()
-    {
-        Collider[] existingColliders = GetComponentsInChildren<Collider>();
-        
-        if (existingColliders.Length == 0)
-        {
-            BoxCollider boxCollider = gameObject.AddComponent<BoxCollider>();
-            
-            Bounds bounds = CalculateModelBounds();
-            
-            Vector3 localSize = new Vector3(
-                bounds.size.x / transform.lossyScale.x,
-                bounds.size.y / transform.lossyScale.y,
-                bounds.size.z / transform.lossyScale.z
-            );
-            
-            Vector3 localCenter = transform.InverseTransformPoint(bounds.center);
-            
-            boxCollider.size = localSize;
-            boxCollider.center = localCenter;
-            
-            boxCollider.size = new Vector3(boxCollider.size.x * 0.9f, boxCollider.size.y, boxCollider.size.z * 0.9f);
-            
-            Debug.Log($"Added BoxCollider to building {name} with local size {boxCollider.size}");
-        }
-        else
-        {
-            foreach (Collider collider in existingColliders)
-            {
-                if (!collider.enabled)
-                {
-                    collider.enabled = true;
-                }
-            }
-        }
-    }
     #endregion
 } 

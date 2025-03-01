@@ -15,11 +15,11 @@ public abstract class BaseBuilding : MonoBehaviour
     #region Fields
     [SerializeField] protected BuildingData _data;
     
-    // Runtime state
+ 
     protected Vector2Int _gridPosition;
     protected List<GridCell> _occupiedCells = new List<GridCell>();
     protected BuildingState _state = BuildingState.Normal;
-    protected int _rotationIndex = 0; // 0 = 0°, 1 = 90°, 2 = 180°, 3 = 270°
+    protected int _rotationIndex = 0; 
     #endregion
     
     #region Properties
@@ -30,7 +30,7 @@ public abstract class BaseBuilding : MonoBehaviour
     public BuildingState State => _state;
     public int RotationIndex => _rotationIndex;
     public float RotationDegrees => _rotationIndex * 90f;
-    public bool IsRotated => _rotationIndex % 2 == 1; // True if rotated 90° or 270°
+    public bool IsRotated => _rotationIndex % 2 == 1; 
     #endregion
     
     #region Public Methods
@@ -43,11 +43,7 @@ public abstract class BaseBuilding : MonoBehaviour
     public virtual void SetPosition(Vector2Int position)
     {
         _gridPosition = position;
-        
-        // Calculate the world position based on the grid position
         Vector3 worldPos = GridManager.Instance.GridToWorldPosition(position);
-        
-        // Position the building at the corner of the grid cell, not the center
         transform.position = worldPos;
         
         UpdateOccupiedCells();
@@ -55,10 +51,9 @@ public abstract class BaseBuilding : MonoBehaviour
     
     public virtual void Rotate()
     {
-        _rotationIndex = (_rotationIndex + 1) % 4; // Cycle through 4 possible rotations
+        _rotationIndex = (_rotationIndex + 1) % 4;
         transform.rotation = Quaternion.Euler(0, _rotationIndex * 90, 0);
-        
-        // Update the occupied cells after rotation
+ 
         UpdateOccupiedCells();
     }
     
@@ -72,25 +67,22 @@ public abstract class BaseBuilding : MonoBehaviour
     public virtual void Select()
     {
         _state = BuildingState.Selected;
-        // Visual feedback for selection - implemented by derived classes
+
     }
     
     public virtual void Deselect()
     {
         _state = BuildingState.Normal;
-        // Remove visual feedback - implemented by derived classes
     }
     
     public virtual void SetPlacementState(bool isValid)
     {
         _state = isValid ? BuildingState.ValidPlacement : BuildingState.InvalidPlacement;
-        // Update visual feedback - implemented by derived classes
     }
     
     public virtual void ConfirmPlacement()
     {
         _state = BuildingState.Normal;
-        // Final placement setup - implemented by derived classes
     }
     #endregion
     
@@ -99,7 +91,7 @@ public abstract class BaseBuilding : MonoBehaviour
     {
         _occupiedCells.Clear();
         
-        Vector2Int actualSize = Size; // Accounts for rotation
+        Vector2Int actualSize = Size;
         
         for (int x = 0; x < actualSize.x; x++)
         {

@@ -251,38 +251,14 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 258038739}
-  - component: {fileID: 258038738}
+  - component: {fileID: 258038740}
   m_Layer: 0
   m_Name: GameObject
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
---- !u!114 &258038738
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 258038737}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: b27e2988e99929944959cca18d432883, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  _testBuildings:
-  - {fileID: 11400000, guid: 08a97e9b5bc4f434d81b8981dbc95648, type: 2}
-  - {fileID: 11400000, guid: 88726f4a8cfb6b74485d4837db4c5c61, type: 2}
-  - {fileID: 11400000, guid: d79098d45dfa17945b5147f0b280c57f, type: 2}
-  _rotateKey: 114
-  _confirmKey: 32
-  _cancelKey: 27
-  _currentBuildingIndex: 0
-  _nextBuildingKey: 101
-  _previousBuildingKey: 113
-  _repositionKey: 116
-  _currentBuildingText: {fileID: 0}
+  m_IsActive: 1
 --- !u!4 &258038739
 Transform:
   m_ObjectHideFlags: 0
@@ -298,6 +274,23 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &258038740
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 258038737}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5a5833d4f85da9f4eaee58ae94804c48, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  _visualizerPrefab: {fileID: 6170342942844910359, guid: ababebfa465e34049857b001d396ce85, type: 3}
+  _initialPoolSize: 20
+  _poolParent: {fileID: 258038739}
+  _validCellMaterial: {fileID: 2100000, guid: 80a9a026c42ea5445abbcadacd4b6b9a, type: 2}
+  _invalidCellMaterial: {fileID: 2100000, guid: 60dc60477376c1d41963db32d49c8db5, type: 2}
 --- !u!1 &330585543
 GameObject:
   m_ObjectHideFlags: 0
@@ -1029,6 +1022,18 @@ PrefabInstance:
     - target: {fileID: 641763124411567981, guid: b0742279013b3254abb437fcd64cda72, type: 3}
       propertyPath: m_Name
       value: Canvas
+      objectReference: {fileID: 0}
+    - target: {fileID: 1036517950390447891, guid: b0742279013b3254abb437fcd64cda72, type: 3}
+      propertyPath: m_IsActive
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1467904155730173605, guid: b0742279013b3254abb437fcd64cda72, type: 3}
+      propertyPath: m_AnchoredPosition.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1467904155730173605, guid: b0742279013b3254abb437fcd64cda72, type: 3}
+      propertyPath: m_AnchoredPosition.y
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 1716404874774315674, guid: b0742279013b3254abb437fcd64cda72, type: 3}
       propertyPath: mainCamera
