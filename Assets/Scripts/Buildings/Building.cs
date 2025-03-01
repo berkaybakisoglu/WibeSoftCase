@@ -20,8 +20,12 @@ public class Building : BaseBuilding
     [SerializeField] private Transform _modelTransform;
     [SerializeField] private Vector3 _modelOffset = Vector3.zero;
     
+    [Header("Layer Settings")]
+    [SerializeField] private string _buildingLayerName = "Building";
+    
     private List<GameObject> _cellVisualizers = new List<GameObject>();
     private bool _showingCellVisualizers = false;
+    private bool _isInPlacementMode = false;
     #endregion
     
     #region Unity Methods
@@ -36,11 +40,48 @@ public class Building : BaseBuilding
         {
             _modelTransform = transform;
         }
+        
+        // Set the layer for this building and all its children
+        SetLayerRecursively(gameObject, LayerMask.NameToLayer(_buildingLayerName));
     }
     
     private void OnDestroy()
     {
         ClearCellVisualizers();
+    }
+    
+    private void OnMouseEnter()
+    {
+        if (_state != BuildingState.Selected && !_isInPlacementMode)
+        {
+            // Change material to indicate hover
+            Material[] originalMaterials = new Material[_buildingRenderers.Length];
+            for (int i = 0; i < _buildingRenderers.Length; i++)
+            {
+                if (_buildingRenderers[i] != null)
+                {
+                    // Store original material
+                    originalMaterials[i] = _buildingRenderers[i].material;
+                    
+                    // Create a temporary material with emissive properties
+                    Material hoverMaterial = new Material(_buildingRenderers[i].material);
+                    hoverMaterial.EnableKeyword("_EMISSION");
+                    hoverMaterial.SetColor("_EmissionColor", Color.yellow * 0.5f);
+                    
+                    _buildingRenderers[i].material = hoverMaterial;
+                }
+            }
+        }
+    }
+    
+    private void OnMouseExit()
+    {
+        if (_state != BuildingState.Selected && !_isInPlacementMode)
+        {
+            // Restore original material
+            UpdateMaterials(_state == BuildingState.Normal ? _defaultMaterial : 
+                           (_state == BuildingState.ValidPlacement ? _validPlacementMaterial : _invalidPlacementMaterial));
+        }
     }
     
     #endregion
@@ -76,6 +117,7 @@ public class Building : BaseBuilding
     public override void SetPlacementState(bool isValid)
     {
         base.SetPlacementState(isValid);
+        _isInPlacementMode = true;
         UpdateMaterials(isValid ? _validPlacementMaterial : _invalidPlacementMaterial);
         
         ShowCellVisualizers();
@@ -84,6 +126,7 @@ public class Building : BaseBuilding
     public override void ConfirmPlacement()
     {
         base.ConfirmPlacement();
+        _isInPlacementMode = false;
         UpdateMaterials(_defaultMaterial);
         HideCellVisualizers();
     }
@@ -349,5 +392,19 @@ public class Building : BaseBuilding
         return centerPos;
     }
     
+    private void SetLayerRecursively(GameObject obj, int layer)
+    {
+        if (obj == null) return;
+        
+        obj.layer = layer;
+        
+        foreach (Transform child in obj.transform)
+        {
+            if (child != null)
+            {
+                SetLayerRecursively(child.gameObject, layer);
+            }
+        }
+    }
     #endregion
 } 

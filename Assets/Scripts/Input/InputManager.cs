@@ -7,6 +7,7 @@ public class InputManager : BaseManager<InputManager>
 {
     #region Fields
     [SerializeField] private LayerMask gridLayerMask;
+    [SerializeField] private LayerMask buildingLayerMask;
     [SerializeField] private Camera mainCamera;
     [SerializeField] private float dragCellCheckInterval = 0.1f;
     
@@ -36,7 +37,10 @@ public class InputManager : BaseManager<InputManager>
             isDragging = true;
             interactedCells.Clear();
             
-            HandleGridSelection();
+            if (!HandleBuildingSelection())
+            {
+                HandleGridSelection();
+            }
         }
         else if (Input.GetMouseButton(0) && isDragging)
         {
@@ -54,6 +58,29 @@ public class InputManager : BaseManager<InputManager>
     #endregion
     
     #region Private Methods
+    private bool HandleBuildingSelection()
+    {
+        Ray ray = mainCamera.ScreenPointToRay(Input.mousePosition);
+        
+        if (Physics.Raycast(ray, out RaycastHit hit, Mathf.Infinity, buildingLayerMask))
+        {
+            Building building = hit.collider.GetComponent<Building>();
+            if (building == null)
+            {
+                building = hit.collider.GetComponentInParent<Building>();
+            }
+            
+            if (building != null)
+            {
+                BuildingManager.Instance.SelectBuildingDirectly(building);
+                Debug.Log($"Building selected directly: {building.name}");
+                return true;
+            }
+        }
+        
+        return false;
+    }
+    
     private void HandleGridSelection()
     {
         Ray ray = mainCamera.ScreenPointToRay(Input.mousePosition);

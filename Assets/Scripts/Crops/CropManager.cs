@@ -23,24 +23,10 @@ public class CropManager : BaseManager<CropManager>
     
     private Dictionary<Vector2Int, Crop> _plantedCrops = new Dictionary<Vector2Int, Crop>();
     
-    [SerializeField] private bool _allowDragInteractionDuringAnimation = true;
-    private float _lastBusyMessageTime = 0f;
-    [SerializeField] private float _busyMessageDuration = 1.5f;
-    
-    [Header("Harvested Item Visuals")]
-    [SerializeField] private bool _enableHarvestVisuals = true;
     [SerializeField] private HarvestedItemPool _harvestedItemPool;
     #endregion
     
     #region Unity Methods
-    protected override void OnAwake()
-    {
-     
-        if (_harvestedItemPool == null)
-        {
-            _harvestedItemPool = FindObjectOfType<HarvestedItemPool>();
-        }
-    }
     
     private void Start()
     {
@@ -72,13 +58,8 @@ public class CropManager : BaseManager<CropManager>
             }
         }
         
-        if (anyAnimating && !_allowDragInteractionDuringAnimation)
+        if (anyAnimating)
         {
-            if (Time.time - _lastBusyMessageTime > _busyMessageDuration)
-            {
-                Debug.Log("Please wait for the current action to complete!");
-                _lastBusyMessageTime = Time.time;
-            }
             return;
         }
         
@@ -117,7 +98,7 @@ public class CropManager : BaseManager<CropManager>
             }
             else
             {
-                Debug.LogError("Crop prefab does not have a Crop component!");
+                
                 Destroy(cropObject);
             }
         }
@@ -200,21 +181,14 @@ public class CropManager : BaseManager<CropManager>
         {
             _broccoliHarvested += crop.GetHarvestYield();
             Debug.Log($"Harvested Broccoli! Total: {_broccoliHarvested}");
+            _harvestedItemPool.SpawnHarvestedItems(CropType.Broccoli, crop.transform.position, crop.GetHarvestYield());
             
-            if (_enableHarvestVisuals && _harvestedItemPool != null)
-            {
-                _harvestedItemPool.SpawnHarvestedItems(CropType.Broccoli, crop.transform.position, crop.GetHarvestYield());
-            }
         }
         else if (crop is CornCrop)
         {
             _cornHarvested += crop.GetHarvestYield();
             Debug.Log($"Harvested Corn! Total: {_cornHarvested}");
-            
-            if (_enableHarvestVisuals && _harvestedItemPool != null)
-            {
-                _harvestedItemPool.SpawnHarvestedItems(CropType.Corn, crop.transform.position, crop.GetHarvestYield());
-            }
+            _harvestedItemPool.SpawnHarvestedItems(CropType.Corn, crop.transform.position, crop.GetHarvestYield());
         }
         if (_plantedCrops.ContainsKey(crop.GetComponent<Crop>().OccupiedCell.GridPosition))
         {
@@ -240,35 +214,6 @@ public class CropManager : BaseManager<CropManager>
     #endregion
     
     #region Public Methods
-    public Crop GetCropAtPosition(Vector2Int gridPosition)
-    {
-        if (_plantedCrops.TryGetValue(gridPosition, out Crop crop))
-        {
-            return crop;
-        }
-        
-        return null;
-    }
-    
-    public bool HasCropOfType<T>(Vector2Int gridPosition) where T : Crop
-    {
-        if (_plantedCrops.TryGetValue(gridPosition, out Crop crop))
-        {
-            return crop is T;
-        }
-        
-        return false;
-    }
-    
-    public T GetCropAs<T>(Vector2Int gridPosition) where T : Crop
-    {
-        if (_plantedCrops.TryGetValue(gridPosition, out Crop crop) && crop is T typedCrop)
-        {
-            return typedCrop;
-        }
-        
-        return null;
-    }
     
     public string GetSelectedCropType() => _selectedCropType.ToString();
     
@@ -285,17 +230,5 @@ public class CropManager : BaseManager<CropManager>
     
     public int GetCornHarvested() => _cornHarvested;
     
-    public bool IsAnyInteractionInProgress()
-    {
-        foreach (var crop in _plantedCrops.Values)
-        {
-            if (crop.IsAnimatingTool)
-            {
-                return true;
-            }
-        }
-        
-        return false;
-    }
     #endregion
 }

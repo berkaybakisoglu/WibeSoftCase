@@ -10,7 +10,7 @@ GameObject:
   m_Component:
   - component: {fileID: 8513290071844835956}
   - component: {fileID: 2491811412559631941}
-  m_Layer: 0
+  m_Layer: 7
   m_Name: LargeBuilding
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -54,13 +54,11 @@ MonoBehaviour:
   _selectedMaterial: {fileID: 3977926055095282242, guid: 3ab914b001b1a6844b59bc633c725989, type: 3}
   _validPlacementMaterial: {fileID: 2100000, guid: 80a9a026c42ea5445abbcadacd4b6b9a, type: 2}
   _invalidPlacementMaterial: {fileID: 2100000, guid: 60dc60477376c1d41963db32d49c8db5, type: 2}
-  _gridCellVisualizerPrefab: {fileID: 0}
-  _validCellMaterial: {fileID: 2100000, guid: 80a9a026c42ea5445abbcadacd4b6b9a, type: 2}
-  _invalidCellMaterial: {fileID: 2100000, guid: 60dc60477376c1d41963db32d49c8db5, type: 2}
   _cellVisualizerHeight: 0.05
   _autoScaleToFitGrid: 1
   _modelTransform: {fileID: 2199826156671493029}
   _modelOffset: {x: 0, y: 0, z: 0}
+  _buildingLayerName: Building
 --- !u!1001 &3057718226310839751
 PrefabInstance:
   m_ObjectHideFlags: 0

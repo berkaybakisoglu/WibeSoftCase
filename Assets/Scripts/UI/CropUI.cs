@@ -37,7 +37,7 @@ public class CropUI : MonoBehaviour
     {
         if (CropManager.Instance != null)
         {
-            _selectedCropText.text = "Selected type" + CropManager.Instance.GetSelectedCropType();
+            _selectedCropText.text = "Selected type " + CropManager.Instance.GetSelectedCropType();
         }
     }
     
