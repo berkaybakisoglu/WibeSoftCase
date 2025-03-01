@@ -55,25 +55,35 @@ public class Building : BaseBuilding
     
     private void OnDrawGizmos()
     {
-        if (_data == null)
+        if (!Application.isPlaying)
             return;
             
-        Vector2Int size = (_rotationIndex % 2 == 1) ? 
-            new Vector2Int(_data.size.y, _data.size.x) : _data.size;
-            
-        Vector3 center = CalculateGridCenterWorldPosition();
-        
+        Vector2Int actualSize = Size;
         float cellSize = GridManager.Instance != null ? GridManager.Instance.CellSize : 1f;
-        Vector3 worldSize = new Vector3(size.x * cellSize, 0.1f, size.y * cellSize);
         
         Gizmos.color = Color.yellow;
+        for (int x = 0; x < actualSize.x; x++)
+        {
+            for (int z = 0; z < actualSize.y; z++)
+            {
+                Vector2Int cellPos = _gridPosition + new Vector2Int(x, z);
+                Vector3 worldPos = GridManager.Instance != null ? 
+                    GridManager.Instance.GridToWorldPosition(cellPos) : 
+                    new Vector3((cellPos.x + 0.5f) * cellSize, 0, (cellPos.y + 0.5f) * cellSize);
+                
+                Gizmos.DrawWireCube(
+                    new Vector3(worldPos.x, 0.1f, worldPos.z), 
+                    new Vector3(cellSize, 0.1f, cellSize)
+                );
+            }
+        }
         
-        Matrix4x4 originalMatrix = Gizmos.matrix;
-        Gizmos.matrix = Matrix4x4.TRS(center, Quaternion.Euler(0, _rotationIndex * 90, 0), Vector3.one);
-        
-        Gizmos.DrawWireCube(Vector3.zero, worldSize);
-        
-        Gizmos.matrix = originalMatrix;
+        if (_modelTransform != null)
+        {
+            Gizmos.color = Color.blue;
+            Bounds bounds = CalculateModelBounds();
+            Gizmos.DrawWireCube(bounds.center, bounds.size);
+        }
     }
     #endregion
     
@@ -166,191 +176,10 @@ public class Building : BaseBuilding
         {
             PositionModelWithOffset();
         }
-        
-        if (_showingCellVisualizers)
-        {
-            UpdateCellVisualizerPositions();
-        }
     }
     #endregion
     
     #region Private Methods
-    private void LogDebugInfo(string prefix)
-    {
-        Vector2Int size = Size;
-        Vector3 worldPos = transform.position;
-        Vector3 localScale = _modelTransform.localScale;
-        Vector3 localPos = _modelTransform.localPosition;
-        
-        Debug.Log($"{prefix} - GridPos: {_gridPosition}, Size: {size}, " +
-                  $"WorldPos: {worldPos}, ModelScale: {localScale}, ModelLocalPos: {localPos}");
-    }
-    
-    private void UpdateMaterials(Material material)
-    {
-        if (_buildingRenderers == null || _buildingRenderers.Length == 0)
-            return;
-            
-        if (material != null)
-        {
-            foreach (MeshRenderer renderer in _buildingRenderers)
-            {
-                Material[] materials = new Material[renderer.materials.Length];
-                for (int i = 0; i < materials.Length; i++)
-                {
-                    materials[i] = material;
-                }
-                renderer.materials = materials;
-            }
-        }
-    }
-    
-    private void CreateCellVisualizers()
-    {
-        ClearCellVisualizers();
-        
-        Vector2Int size = Size;
-        for (int x = 0; x < size.x; x++)
-        {
-            for (int z = 0; z < size.y; z++)
-            {
-                GameObject visualizer = Instantiate(_gridCellVisualizerPrefab, transform);
-                visualizer.SetActive(false);
-                _cellVisualizers.Add(visualizer);
-            }
-        }
-    }
-    
-    private void ShowCellVisualizers(bool isValidPlacement)
-    {
-        if (_cellVisualizers.Count == 0)
-            return;
-            
-        _showingCellVisualizers = true;
-        
-        UpdateCellVisualizerPositions();
-        
-        CheckCellValidity();
-        
-        foreach (GameObject visualizer in _cellVisualizers)
-        {
-            visualizer.SetActive(true);
-        }
-    }
-    
-    private void UpdateCellVisualizerPositions()
-    {
-        if (_cellVisualizers.Count == 0)
-            return;
-            
-        Vector2Int size = Size;
-        float cellSize = GridManager.Instance != null ? GridManager.Instance.CellSize : 1f;
-        
-        int index = 0;
-        for (int x = 0; x < size.x; x++)
-        {
-            for (int z = 0; z < size.y; z++)
-            {
-                if (index < _cellVisualizers.Count)
-                {
-                    GameObject visualizer = _cellVisualizers[index];
-                    
-                    Vector3 localPos = new Vector3(
-                        (x + 0.5f) * cellSize - (size.x * cellSize / 2),
-                        _cellVisualizerHeight,
-                        (z + 0.5f) * cellSize - (size.y * cellSize / 2)
-                    );
-                    
-                    Quaternion rotation = Quaternion.Euler(0, _rotationIndex * 90, 0);
-                    localPos = rotation * localPos;
-                    
-                    visualizer.transform.localPosition = localPos;
-                    visualizer.transform.localScale = new Vector3(cellSize, 0.01f, cellSize);
-                    
-                    index++;
-                }
-            }
-        }
-    }
-    
-    private void CheckCellValidity()
-    {
-        if (_cellVisualizers.Count == 0)
-            return;
-            
-        Vector2Int size = Size;
-        
-        int index = 0;
-        for (int x = 0; x < size.x; x++)
-        {
-            for (int z = 0; z < size.y; z++)
-            {
-                if (index < _cellVisualizers.Count)
-                {
-                    GameObject visualizer = _cellVisualizers[index];
-                    Vector2Int cellPos = _gridPosition + new Vector2Int(x, z);
-                    
-                    bool isValid = IsCellValid(cellPos);
-                    
-                    MeshRenderer renderer = visualizer.GetComponent<MeshRenderer>();
-                    if (renderer != null)
-                    {
-                        renderer.material = isValid ? _validCellMaterial : _invalidCellMaterial;
-                    }
-                    
-                    index++;
-                }
-            }
-        }
-    }
-    
-    private bool IsCellValid(Vector2Int cellPos)
-    {
-        GridCell cell = GridManager.Instance.GetCellAtGridPosition(cellPos);
-        if (cell == null)
-            return false;
-            
-        if (cell.IsOccupied)
-        {
-            if (_state == BuildingState.ValidPlacement || _state == BuildingState.InvalidPlacement)
-            {
-                return false;
-            }
-        }
-        
-        return true;
-    }
-    
-    private void HideCellVisualizers()
-    {
-        if (_cellVisualizers.Count == 0)
-            return;
-            
-        _showingCellVisualizers = false;
-        
-        foreach (GameObject visualizer in _cellVisualizers)
-        {
-            visualizer.SetActive(false);
-        }
-    }
-    
-    private void ClearCellVisualizers()
-    {
-        if (_cellVisualizers.Count == 0)
-            return;
-            
-        foreach (GameObject visualizer in _cellVisualizers)
-        {
-            if (visualizer != null)
-            {
-                Destroy(visualizer);
-            }
-        }
-        
-        _cellVisualizers.Clear();
-        _showingCellVisualizers = false;
-    }
-    
     private void CreateDefaultCellVisualizerPrefab()
     {
         GameObject visualizerPrefab = new GameObject("DefaultCellVisualizer");
@@ -441,20 +270,204 @@ public class Building : BaseBuilding
         return mesh;
     }
     
-    private void ScaleModelToFitGrid()
+    private void LogDebugInfo(string prefix)
     {
-        if (_modelTransform == null || _data == null)
+        if (_data == null || _modelTransform == null)
             return;
             
-        Bounds modelBounds = CalculateModelBounds();
+        Vector2Int actualSize = Size;
+        Bounds bounds = CalculateModelBounds();
         
+        #if UNITY_EDITOR || DEVELOPMENT_BUILD
+        Debug.Log($"{prefix}: Rotation={_rotationIndex * 90}°, " +
+                  $"Size={actualSize.x}x{actualSize.y}, " +
+                  $"ModelScale={_modelTransform.localScale}, " +
+                  $"ModelWorldPos={_modelTransform.position}, " +
+                  $"BuildingPos={transform.position}");
+        #endif
+    }
+    
+    private void UpdateMaterials(Material material)
+    {
+        if (material == null)
+            return;
+            
+        foreach (var renderer in _buildingRenderers)
+        {
+            if (renderer != null)
+            {
+                Material[] materials = new Material[renderer.materials.Length];
+                for (int i = 0; i < materials.Length; i++)
+                {
+                    materials[i] = material;
+                }
+                renderer.materials = materials;
+            }
+        }
+    }
+    
+    private void CreateCellVisualizers()
+    {
+        ClearCellVisualizers();
+        
+        int maxSize = Mathf.Max(_data.size.x, _data.size.y);
+        int totalCells = maxSize * maxSize;
+        float cellSize = GridManager.Instance.CellSize;
+        
+        for (int i = 0; i < totalCells; i++)
+        {
+            GameObject visualizer = Instantiate(_gridCellVisualizerPrefab, transform);
+            visualizer.transform.localScale = new Vector3(cellSize, _cellVisualizerHeight * 2, cellSize);
+            visualizer.SetActive(false);
+            _cellVisualizers.Add(visualizer);
+        }
+    }
+    
+    private void ShowCellVisualizers(bool isValidPlacement)
+    {
+        if (_cellVisualizers.Count == 0 || _gridCellVisualizerPrefab == null)
+            return;
+            
+        _showingCellVisualizers = true;
+        
+        UpdateCellVisualizerPositions();
+        
+        CheckCellValidity();
+    }
+    
+    private void UpdateCellVisualizerPositions()
+    {
+        Vector2Int actualSize = Size;
+        float cellSize = GridManager.Instance.CellSize;
+        
+        for (int i = 0; i < _cellVisualizers.Count; i++)
+        {
+            if (i < actualSize.x * actualSize.y)
+            {
+                int x = i % actualSize.x;
+                int z = i / actualSize.x;
+                
+                Vector3 worldPos;
+                
+                Vector2Int cellPos = _gridPosition + new Vector2Int(x, z);
+                
+                worldPos = GridManager.Instance.GridToWorldPosition(cellPos);
+                worldPos.y += _cellVisualizerHeight;
+                
+                GameObject visualizer = _cellVisualizers[i];
+                visualizer.transform.position = worldPos;
+                
+                visualizer.transform.localScale = new Vector3(cellSize, _cellVisualizerHeight * 2, cellSize);
+                
+                visualizer.SetActive(true);
+            }
+            else
+            {
+                _cellVisualizers[i].SetActive(false);
+            }
+        }
+    }
+    
+    private void CheckCellValidity()
+    {
+        Vector2Int actualSize = Size;
+        
+        for (int x = 0; x < actualSize.x; x++)
+        {
+            for (int z = 0; z < actualSize.y; z++)
+            {
+                int index = z * actualSize.x + x;
+                if (index < _cellVisualizers.Count)
+                {
+                    Vector2Int cellPos = _gridPosition + new Vector2Int(x, z);
+                    bool isCellValid = IsCellValid(cellPos);
+                    
+                    GameObject visualizer = _cellVisualizers[index];
+                    MeshRenderer renderer = visualizer.GetComponent<MeshRenderer>();
+                    
+                    if (renderer != null)
+                    {
+                        renderer.material = isCellValid ? _validCellMaterial : _invalidCellMaterial;
+                    }
+                }
+            }
+        }
+    }
+    
+    private bool IsCellValid(Vector2Int cellPos)
+    {
+        if (!GridManager.Instance.IsValidGridPosition(cellPos.x, cellPos.y))
+            return false;
+            
+        GridCell cell = GridManager.Instance.GetCellAtGridPosition(cellPos);
+        if (cell == null)
+            return false;
+            
+        if (cell.IsOccupied)
+        {
+            if (cell.OccupyingObject != gameObject)
+                return false;
+        }
+        
+        return true;
+    }
+    
+    private void HideCellVisualizers()
+    {
+        _showingCellVisualizers = false;
+        
+        foreach (var visualizer in _cellVisualizers)
+        {
+            if (visualizer != null)
+            {
+                visualizer.SetActive(false);
+            }
+        }
+    }
+    
+    private void ClearCellVisualizers()
+    {
+        foreach (var visualizer in _cellVisualizers)
+        {
+            if (visualizer != null)
+            {
+                Destroy(visualizer);
+            }
+        }
+        
+        _cellVisualizers.Clear();
+    }
+    
+    private void ScaleModelToFitGrid()
+    {
+        if (_data == null || _modelTransform == null)
+            return;
+            
         float cellSize = GridManager.Instance != null ? GridManager.Instance.CellSize : 1f;
         
-        Vector2Int gridSize = Size;
-        Vector3 targetSize = new Vector3(gridSize.x * cellSize, modelBounds.size.y, gridSize.y * cellSize);
+        Vector2Int actualSize = Size;
+        float totalWidth = actualSize.x * cellSize;
+        float totalHeight = actualSize.y * cellSize;
         
-        float scaleX = targetSize.x / modelBounds.size.x;
-        float scaleZ = targetSize.z / modelBounds.size.z;
+        Quaternion originalRotation = _modelTransform.localRotation;
+        _modelTransform.localRotation = Quaternion.identity;
+        
+        Vector3 originalScale = _modelTransform.localScale;
+        _modelTransform.localScale = Vector3.one;
+        
+        Bounds originalBounds = CalculateModelBounds();
+        
+        _modelTransform.localRotation = originalRotation;
+        
+        if (originalBounds.size == Vector3.zero)
+        {
+            _modelTransform.localScale = originalScale;
+            Debug.LogWarning("Could not calculate model bounds for scaling");
+            return;
+        }
+        
+        float scaleX = totalWidth / originalBounds.size.x;
+        float scaleZ = totalHeight / originalBounds.size.z;
         
         float scale = Mathf.Min(scaleX, scaleZ);
         
@@ -465,74 +478,133 @@ public class Building : BaseBuilding
     
     private Bounds CalculateModelBounds()
     {
-        MeshRenderer[] renderers = _modelTransform.GetComponentsInChildren<MeshRenderer>();
+        Bounds bounds = new Bounds(Vector3.zero, Vector3.zero);
+        bool boundsInitialized = false;
         
-        if (renderers.Length == 0)
+        if (_modelTransform == null)
+            return bounds;
+        
+        Renderer[] renderers = _modelTransform.GetComponentsInChildren<Renderer>();
+        
+        foreach (Renderer renderer in renderers)
         {
-            return new Bounds(_modelTransform.position, Vector3.one);
+            if (renderer != null)
+            {
+                if (!boundsInitialized)
+                {
+                    bounds = renderer.bounds;
+                    boundsInitialized = true;
+                }
+                else
+                {
+                    bounds.Encapsulate(renderer.bounds);
+                }
+            }
         }
         
-        Bounds bounds = renderers[0].bounds;
-        
-        for (int i = 1; i < renderers.Length; i++)
+        if (!boundsInitialized)
         {
-            bounds.Encapsulate(renderers[i].bounds);
+            Collider[] colliders = _modelTransform.GetComponentsInChildren<Collider>();
+            foreach (Collider collider in colliders)
+            {
+                if (collider != null)
+                {
+                    if (!boundsInitialized)
+                    {
+                        bounds = collider.bounds;
+                        boundsInitialized = true;
+                    }
+                    else
+                    {
+                        bounds.Encapsulate(collider.bounds);
+                    }
+                }
+            }
         }
         
-        Vector3 localCenter = _modelTransform.InverseTransformPoint(bounds.center);
-        Vector3 localExtents = bounds.extents;
+        if (!boundsInitialized)
+        {
+            Debug.LogWarning("Could not find any renderers or colliders to calculate bounds. Using default bounds.");
+            bounds = new Bounds(_modelTransform.position, Vector3.one);
+        }
         
-        Bounds localBounds = new Bounds(localCenter, localExtents * 2);
-        
-        return localBounds;
+        return bounds;
     }
     
     private void PositionModelWithOffset()
     {
-        if (_modelTransform == null || _data == null)
+        if (_modelTransform == null || _modelTransform == transform)
             return;
             
         Vector3 gridCenter = CalculateGridCenterWorldPosition();
         
-        Vector3 offsetToGridCenter = gridCenter - transform.position;
+        _modelTransform.position = gridCenter;
         
-        Quaternion rotation = Quaternion.Euler(0, _rotationIndex * 90, 0);
-        Vector3 rotatedModelOffset = rotation * _modelOffset;
+        if (_modelOffset != Vector3.zero)
+        {
+            Vector3 rotatedOffset = transform.rotation * _modelOffset;
+            _modelTransform.position += rotatedOffset;
+        }
         
-        _modelTransform.position = transform.position + offsetToGridCenter + rotatedModelOffset;
+        #if UNITY_EDITOR || DEVELOPMENT_BUILD
+        Debug.Log($"Model positioned at grid center: {gridCenter}, final position: {_modelTransform.position}");
+        #endif
     }
     
     private Vector3 CalculateGridCenterWorldPosition()
     {
-        float cellSize = GridManager.Instance != null ? GridManager.Instance.CellSize : 1f;
+        Vector2Int actualSize = Size;
         
-        Vector2Int gridSize = Size;
+        if (actualSize.x == 1 && actualSize.y == 1)
+        {
+            return GridManager.Instance.GridToWorldPosition(_gridPosition);
+        }
         
-        Vector3 centerOffset = new Vector3(
-            gridSize.x * cellSize / 2,
-            0,
-            gridSize.y * cellSize / 2
-        );
+        Vector2Int minCorner = _gridPosition;
+        Vector2Int maxCorner = _gridPosition + new Vector2Int(actualSize.x - 1, actualSize.y - 1);
         
-        Vector3 gridOrigin = GridManager.Instance.GridToWorldPosition(_gridPosition);
-        Vector3 gridCenter = gridOrigin + centerOffset;
+        Vector3 minWorldPos = GridManager.Instance.GridToWorldPosition(minCorner);
+        Vector3 maxWorldPos = GridManager.Instance.GridToWorldPosition(maxCorner);
         
-        return gridCenter;
+        Vector3 centerPos = (minWorldPos + maxWorldPos) * 0.5f;
+        
+        return centerPos;
     }
     
     private void EnsureBuildingHasCollider()
     {
-        Collider collider = GetComponent<Collider>();
+        Collider[] existingColliders = GetComponentsInChildren<Collider>();
         
-        if (collider == null)
+        if (existingColliders.Length == 0)
         {
             BoxCollider boxCollider = gameObject.AddComponent<BoxCollider>();
             
-            Vector2Int size = Size;
-            float cellSize = GridManager.Instance != null ? GridManager.Instance.CellSize : 1f;
+            Bounds bounds = CalculateModelBounds();
             
-            boxCollider.size = new Vector3(size.x * cellSize, 1f, size.y * cellSize);
-            boxCollider.center = new Vector3(size.x * cellSize / 2, 0.5f, size.y * cellSize / 2);
+            Vector3 localSize = new Vector3(
+                bounds.size.x / transform.lossyScale.x,
+                bounds.size.y / transform.lossyScale.y,
+                bounds.size.z / transform.lossyScale.z
+            );
+            
+            Vector3 localCenter = transform.InverseTransformPoint(bounds.center);
+            
+            boxCollider.size = localSize;
+            boxCollider.center = localCenter;
+            
+            boxCollider.size = new Vector3(boxCollider.size.x * 0.9f, boxCollider.size.y, boxCollider.size.z * 0.9f);
+            
+            Debug.Log($"Added BoxCollider to building {name} with local size {boxCollider.size}");
+        }
+        else
+        {
+            foreach (Collider collider in existingColliders)
+            {
+                if (!collider.enabled)
+                {
+                    collider.enabled = true;
+                }
+            }
         }
     }
     #endregion
